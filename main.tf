@@ -13,11 +13,11 @@ resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
   source_raw {
     data = <<-EOF
     #cloud-config
-    hostname: test-ubuntu
-    timezone: America/Toronto
+    hostname: test-vm
+    timezone: Asia/Thailand
     users:
       - default
-      - name: ubuntu
+      - name: taha
         groups:
           - sudo
         shell: /bin/bash
@@ -38,59 +38,62 @@ resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
     file_name = "user-data-cloud-config.yaml"
   }
 }
-# resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
-#   name      = "test-ubuntu"
-#   node_name = "acervn4640"
+resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
+  name      = "test-ubuntu-vm"
+  node_name = "acervn4640"
 
-#   agent {
-#     enabled = true
-#   }
+  agent {
+    enabled = true
+  }
 
-#   cpu {
-#     cores = 2
-#   }
+  cpu {
+    cores = 2
+  }
 
-#   memory {
-#     dedicated = 2048
-#   }
+  memory {
+    dedicated = 2048
+  }
 
-#   disk {
-#     datastore_id = "local-lvm"
-#     import_from  = proxmox_virtual_environment_download_file.ubuntu_cloud_image.id
-#     interface    = "virtio0"
-#     iothread     = true
-#     discard      = "on"
-#     size         = 20
-#   }
+  disk {
+    datastore_id = "ssd"
+    import_from  = proxmox_virtual_environment_download_file.ubuntu_cloud_image.id
+    interface    = "virtio0"
+    iothread     = true
+    discard      = "on"
+    size         = 20
+  }
 
-#   initialization {
-#     # uncomment and specify the datastore for cloud-init disk if default `local-lvm` is not available
-#     # datastore_id = "local-lvm"
+  initialization {
+    # uncomment and specify the datastore for cloud-init disk if default `local-lvm` is not available
+    # datastore_id = "local-lvm"
 
-#     ip_config {
-#       ipv4 {
-#         address = "dhcp"
-#       }
-#     }
+    ip_config {
+      ipv4 {
+        address = "dhcp"
+      }
+    }
 
-#     user_data_file_id = proxmox_virtual_environment_file.user_data_cloud_config.id
-#   }
+    user_data_file_id = proxmox_virtual_environment_file.user_data_cloud_config.id
+  }
 
-#   network_device {
-#     bridge = "vmbr0"
-#   }
+  network_device {
+    bridge = "vmbr0"
+  }
 
-# }
+}
 
-# resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
-#   content_type = "import"
-#   datastore_id = "local"
-#   node_name    = "pve"
-#   url          = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
-#   # need to rename the file to *.qcow2 to indicate the actual file format for import
-#   file_name = "jammy-server-cloudimg-amd64.qcow2"
-# }
+#download source
+resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
+  content_type = "import"
+  datastore_id = "ssd"
+  node_name    = "acervn4640"
+  url          = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+  # need to rename the file to *.qcow2 to indicate the actual file format for import
+  file_name = "jammy-server-cloudimg-amd64.qcow2"
+}
 
-# output "vm_ipv4_address" {
-#   value = proxmox_virtual_environment_vm.ubuntu_vm.ipv4_addresses[1][0]
-# }
+# print out the VM's IPv4 address
+output "vm_ipv4_address" {
+  description = "VM IPv4 address reported by the guest agent (empty if not available yet)"
+  value       = try(proxmox_virtual_environment_vm.ubuntu_vm.ipv4_addresses[0][0], "")
+}
